@@ -1,202 +1,168 @@
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-import { Trophy, Target, CheckCircle2, Award, Calendar, BookOpen, Code2, Download } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { BookOpen, Trophy, Target, ArrowRight, Loader2, Star } from "lucide-react";
 
-type Stats = {
-  submitted: number;
-  accepted: number;
-  pending: number;
-};
+interface Submission {
+  id: number;
+  problem_id: number;
+  status: string;
+  created_at: string;
+}
 
-const badges = [
-  { name: "Bronze Solver", icon: "🥉", threshold: 10 },
-  { name: "Silver Solver", icon: "🥈", threshold: 25 },
-  { name: "Gold Solver", icon: "🥇", threshold: 50 },
-];
+interface Achievement {
+  title: string;
+  icon: string;
+  earned_at: string;
+}
 
 export default function Dashboard() {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
-  const [stats, setStats] = useState<Stats>({ submitted: 0, accepted: 0, pending: 0 });
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {
-    if (!loading && !user) {
-      navigate("/auth");
-    }
+    if (!loading && !user) navigate("/auth");
   }, [user, loading, navigate]);
 
   useEffect(() => {
     if (!user) return;
-    const fetchStats = async () => {
-      const { data } = await supabase
-        .from("submissions")
-        .select("status")
-        .eq("user_id", user.id);
-
-      if (data) {
-        setStats({
-          submitted: data.length,
-          accepted: data.filter((s: any) => s.status === "accepted").length,
-          pending: data.filter((s: any) => s.status === "pending").length,
-        });
-      }
+    const fetchData = async () => {
+      const [{ data: subs }, { data: achv }] = await Promise.all([
+        supabase
+          .from("submissions")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(5),
+        supabase
+          .from("user_achievements")
+          .select("earned_at, achievements(title, icon)")
+          .eq("user_id", user.id),
+      ]);
+      setSubmissions(subs ?? []);
+      setAchievements(
+        (achv ?? []).map((a: any) => ({ ...a.achievements, earned_at: a.earned_at }))
+      );
+      setDataLoading(false);
     };
-    fetchStats();
+    fetchData();
   }, [user]);
 
-  if (loading || !user) return null;
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  if (!user) return null;
 
-  const earnedBadges = badges.filter((b) => stats.accepted >= b.threshold);
-  const nextBadge = badges.find((b) => stats.accepted < b.threshold);
+  const solved = submissions.filter((s) => s.status === "solved").length;
+  const attempted = submissions.length;
+  const displayName = profile?.full_name || user.email?.split("@")[0] || "Student";
 
   return (
-    <>
-      <section className="hero-gradient py-12 md:py-16">
-        <div className="container-narrow px-4">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-2xl font-bold text-accent-foreground">
-              {(profile?.full_name || user.email || "U")[0].toUpperCase()}
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-primary-foreground md:text-3xl">
-                {profile?.full_name || "Student"}
-              </h1>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {profile?.track && (
-                  <Badge className="bg-accent/20 text-accent border-0">
-                    {profile.track === "Both" ? "IMO & IOI" : `${profile.track} Track`}
-                  </Badge>
-                )}
-                {profile?.grade && (
-                  <Badge variant="secondary">Grade {profile.grade}</Badge>
-                )}
-                <span className="text-sm text-primary-foreground/60">
-                  Joined {new Date(user.created_at).toLocaleDateString()}
-                </span>
+    <div className="container-narrow px-4 py-12">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold">Welcome back, {displayName} 👋</h1>
+        <p className="text-muted-foreground">{user.email}</p>
+        {profile?.grade && (
+          <Badge variant="secondary" className="mt-2">
+            {profile.grade}{profile.school ? ` · ${profile.school}` : ""}
+          </Badge>
+        )}
+      </div>
+
+      {/* Stats */}
+      <div className="mb-8 grid gap-4 sm:grid-cols-3">
+        {[
+          { icon: BookOpen, label: "Problems Attempted", value: attempted },
+          { icon: Target, label: "Problems Solved", value: solved },
+          { icon: Trophy, label: "Achievements", value: achievements.length },
+        ].map(({ icon: Icon, label, value }) => (
+          <Card key={label}>
+            <CardContent className="flex items-center gap-4 p-6">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <Icon className="h-5 w-5 text-primary" />
               </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+              <div>
+                <div className="text-2xl font-bold">{value}</div>
+                <div className="text-xs text-muted-foreground">{label}</div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-      <section className="section-padding">
-        <div className="container-narrow">
-          {/* Stats Cards */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-            {[
-              { label: "Problems Submitted", value: stats.submitted, icon: Target, color: "text-primary" },
-              { label: "Accepted", value: stats.accepted, icon: CheckCircle2, color: "text-success" },
-              { label: "Pending Review", value: stats.pending, icon: Calendar, color: "text-accent" },
-              { label: "Badges Earned", value: earnedBadges.length, icon: Award, color: "text-gold" },
-            ].map((item, i) => (
-              <motion.div
-                key={item.label}
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <Card>
-                  <CardContent className="flex items-center gap-4 p-5">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                      <item.icon className={`h-5 w-5 ${item.color}`} />
-                    </div>
-                    <div>
-                      <div className="text-2xl font-bold text-foreground">{item.value}</div>
-                      <div className="text-xs text-muted-foreground">{item.label}</div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Badges */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Trophy className="h-5 w-5 text-accent" /> Badges & Achievements
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {badges.map((badge) => {
-                    const earned = stats.accepted >= badge.threshold;
-                    return (
-                      <div key={badge.name} className="flex items-center gap-3">
-                        <span className={`text-2xl ${earned ? "" : "grayscale opacity-40"}`}>{badge.icon}</span>
-                        <div className="flex-1">
-                          <div className={`font-medium ${earned ? "text-foreground" : "text-muted-foreground"}`}>
-                            {badge.name}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {earned ? "Earned!" : `${badge.threshold - stats.accepted} more to go`}
-                          </div>
-                        </div>
-                        {earned && <CheckCircle2 className="h-4 w-4 text-success" />}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {nextBadge && (
-                  <div className="mt-4">
-                    <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                      <span>Progress to {nextBadge.name}</span>
-                      <span>{stats.accepted}/{nextBadge.threshold}</span>
-                    </div>
-                    <Progress value={(stats.accepted / nextBadge.threshold) * 100} className="h-2" />
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Achievements */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Star className="h-4 w-4 text-amber-500" /> Achievements
+            </CardTitle>
+            <CardDescription>Badges you have earned</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {dataLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : achievements.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No achievements yet. Start solving problems!
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {achievements.map((a) => (
+                  <div
+                    key={a.title}
+                    className="flex items-center gap-1.5 rounded-full border bg-muted px-3 py-1 text-sm"
+                  >
+                    <span>{a.icon}</span> {a.title}
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-3"
-                  onClick={() => navigate("/practice")}
-                >
-                  <Target className="h-4 w-4 text-primary" /> Solve Practice Problems
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-3"
-                  onClick={() => navigate("/olympiad-tracks")}
-                >
-                  <BookOpen className="h-4 w-4 text-accent" /> View Olympiad Tracks
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-3"
-                  onClick={() => navigate("/resources")}
-                >
-                  <Code2 className="h-4 w-4 text-success" /> Learning Resources
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-3"
-                  onClick={() => navigate("/scholarships")}
-                >
-                  <Award className="h-4 w-4 text-gold" /> Explore Scholarships
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-    </>
+        {/* Quick Links */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+            <CardDescription>Jump back into your learning</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {[
+              { label: "Practice Problems", href: "/practice", desc: "Solve today's problems" },
+              { label: "Olympiad Tracks", href: "/olympiad-tracks", desc: "Follow your roadmap" },
+              { label: "Browse Resources", href: "/resources", desc: "Find study materials" },
+              { label: "Scholarships", href: "/scholarships", desc: "Find funding opportunities" },
+            ].map((link) => (
+              <Button
+                key={link.href}
+                variant="ghost"
+                className="h-auto w-full justify-between px-3 py-2.5"
+                asChild
+              >
+                <Link to={link.href}>
+                  <div className="text-left">
+                    <p className="text-sm font-medium">{link.label}</p>
+                    <p className="text-xs text-muted-foreground">{link.desc}</p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                </Link>
+              </Button>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }

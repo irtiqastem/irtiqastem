@@ -3,14 +3,12 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
 
-// Singleton pattern to prevent multiple instances
 const globalKey = "__supabase_client__";
-type GlobalWithSupabase = typeof globalThis & { [globalKey]?: ReturnType<typeof createClient> };
-
-const globalWithSupabase = globalThis as GlobalWithSupabase;
-
-if (!globalWithSupabase[globalKey]) {
-  globalWithSupabase[globalKey] = createClient(supabaseUrl, supabaseAnonKey);
+type G = typeof globalThis & { [globalKey]?: ReturnType<typeof createClient> };
+const g = globalThis as G;
+if (!g[globalKey]) {
+  g[globalKey] = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { storage: localStorage, persistSession: true, autoRefreshToken: true }
+  });
 }
-
-export const supabase = globalWithSupabase[globalKey]!;
+export const supabase = g[globalKey]!;

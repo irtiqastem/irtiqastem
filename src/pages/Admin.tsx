@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,60 +9,30 @@ import { Input } from "@/components/ui/input";
 import { Shield, Loader2, Users, BookOpen, Award, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 
-const ADMIN_EMAIL = "arhammukhtar777@gmail.com";
-
 export default function Admin() {
   const navigate = useNavigate();
-  const [status, setStatus] = useState<"loading" | "allowed" | "denied">("loading");
+  const { isAdmin, loading: authLoading } = useAuth();
   const [tab, setTab] = useState<"students" | "problems">("students");
   const [students, setStudents] = useState<any[]>([]);
   const [problems, setProblems] = useState<any[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
   const [newProblem, setNewProblem] = useState({ title: "", subject: "Mathematics", topic: "", difficulty: "Easy" });
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
-
-    const init = async () => {
-      // Wait a moment for auth to settle
-      await new Promise(r => setTimeout(r, 500));
-      
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!mounted) return;
-
-      if (!session?.user) {
-        setStatus("denied");
-        navigate("/auth");
-        return;
-      }
-
-      const userEmail = session.user.email?.toLowerCase().trim();
-      const adminEmail = ADMIN_EMAIL.toLowerCase().trim();
-
-      if (userEmail !== adminEmail) {
-        setStatus("denied");
-        toast.error(`Access denied. Logged in as: ${userEmail}`);
-        navigate("/");
-        return;
-      }
-
-      setStatus("allowed");
-
+    if (authLoading) return;
+    if (!isAdmin) { toast.error("Access denied."); navigate("/"); return; }
+    const loadData = async () => {
       const [{ data: s }, { data: p }] = await Promise.all([
         supabase.from("profiles").select("*").order("created_at", { ascending: false }),
         supabase.from("problems").select("*").order("created_at", { ascending: false }),
       ]);
-
-      if (mounted) {
-        setStudents(s ?? []);
-        setProblems(p ?? []);
-      }
+      setStudents(s ?? []);
+      setProblems(p ?? []);
+      setDataLoading(false);
     };
-
-    init();
-    return () => { mounted = false; };
-  }, [navigate]);
+    loadData();
+  }, [isAdmin, authLoading, navigate]);
 
   const addProblem = async () => {
     if (!newProblem.title.trim()) return;
@@ -83,14 +54,14 @@ export default function Admin() {
     else setProblems(problems.filter((p) => p.id !== id));
   };
 
-  if (status === "loading") return (
+  if (authLoading) return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
       <p className="text-sm text-muted-foreground">Checking admin access...</p>
     </div>
   );
 
-  if (status === "denied") return null;
+  if (!isAdmin) return null;
 
   return (
     <div className="container-narrow px-4 py-12">
@@ -100,7 +71,7 @@ export default function Admin() {
         </div>
         <div>
           <h1 className="text-3xl font-bold">Admin Panel</h1>
-          <p className="text-sm text-muted-foreground">{ADMIN_EMAIL}</p>
+          <p className="text-sm text-muted-foreground">Irtiqa STEM Administration</p>
         </div>
         <Badge className="ml-auto bg-amber-100 text-amber-800">Admin</Badge>
       </div>
@@ -137,7 +108,8 @@ export default function Admin() {
           <CardHeader><CardTitle>All Students</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {students.length === 0 && <p className="text-sm text-muted-foreground">No students yet.</p>}
+              {dataLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {!dataLoading && students.length === 0 && <p className="text-sm text-muted-foreground">No students yet.</p>}
               {students.map((s) => (
                 <div key={s.id} className="flex items-center justify-between rounded-lg border p-3">
                   <div>
@@ -180,7 +152,8 @@ export default function Admin() {
             <CardHeader><CardTitle>All Problems</CardTitle></CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {problems.length === 0 && <p className="text-sm text-muted-foreground">No problems yet.</p>}
+                {dataLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                {!dataLoading && problems.length === 0 && <p className="text-sm text-muted-foreground">No problems yet.</p>}
                 {problems.map((p) => (
                   <div key={p.id} className="flex items-center justify-between rounded-lg border p-3">
                     <div>

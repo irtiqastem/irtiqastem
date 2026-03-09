@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,8 +28,9 @@ interface Problem {
 }
 
 export default function Admin() {
-  const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [checking, setChecking] = useState(true);
+  const [allowed, setAllowed] = useState(false);
   const [tab, setTab] = useState<"students" | "problems">("students");
   const [students, setStudents] = useState<Profile[]>([]);
   const [problems, setProblems] = useState<Problem[]>([]);
@@ -44,18 +44,26 @@ export default function Admin() {
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
-    if (!loading) {
-      if (!user) navigate("/auth");
-      else if (user.email !== ADMIN_EMAIL) {
-        toast.error("Access denied.");
-        navigate("/");
+    // Directly check session from supabase instead of relying on context
+    const checkAdmin = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        navigate("/auth");
+        return;
       }
-    }
-  }, [user, loading, navigate]);
 
-  useEffect(() => {
-    if (!user || user.email !== ADMIN_EMAIL) return;
-    const fetchAll = async () => {
+      const email = session.user.email;
+      if (email !== ADMIN_EMAIL) {
+        toast.error("Access denied. Admin only.");
+        navigate("/");
+        return;
+      }
+
+      setAllowed(true);
+      setChecking(false);
+
+      // Fetch data
       const [{ data: s }, { data: p }] = await Promise.all([
         supabase.from("profiles").select("*").order("created_at", { ascending: false }),
         supabase.from("problems").select("*").order("created_at", { ascending: false }),
@@ -64,15 +72,17 @@ export default function Admin() {
       setProblems(p ?? []);
       setDataLoading(false);
     };
-    fetchAll();
-  }, [user]);
+
+    checkAdmin();
+  }, [navigate]);
 
   const addProblem = async () => {
     if (!newProblem.title.trim()) return;
     setAdding(true);
+    const { data: { session } } = await supabase.auth.getSession();
     const { error } = await supabase
       .from("problems")
-      .insert([{ ...newProblem, created_by: user?.id }]);
+      .insert([{ ...newProblem, created_by: session?.user.id }]);
     if (error) {
       toast.error(error.message);
     } else {
@@ -96,14 +106,15 @@ export default function Admin() {
     }
   };
 
-  if (loading || dataLoading) {
+  if (checking) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
-  if (!user || user.email !== ADMIN_EMAIL) return null;
+
+  if (!allowed) return null;
 
   return (
     <div className="container-narrow px-4 py-12">
@@ -114,7 +125,7 @@ export default function Admin() {
         </div>
         <div>
           <h1 className="text-3xl font-bold">Admin Panel</h1>
-          <p className="text-sm text-muted-foreground">{user.email}</p>
+          <p className="text-sm text-muted-foreground">{ADMIN_EMAIL}</p>
         </div>
         <Badge className="ml-auto bg-amber-100 text-amber-800">Admin</Badge>
       </div>
@@ -164,27 +175,31 @@ export default function Admin() {
             <CardDescription>Every registered student on the platform</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {students.length === 0 && (
-                <p className="text-sm text-muted-foreground">No students registered yet.</p>
-              )}
-              {students.map((s) => (
-                <div key={s.id} className="flex items-center justify-between rounded-lg border p-3">
-                  <div>
-                    <p className="font-medium">{s.full_name || "No name set"}</p>
-                    <p className="text-sm text-muted-foreground">{s.email}</p>
+            {dataLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <div className="space-y-3">
+                {students.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No students registered yet.</p>
+                )}
+                {students.map((s) => (
+                  <div key={s.id} className="flex items-center justify-between rounded-lg border p-3">
+                    <div>
+                      <p className="font-medium">{s.full_name || "No name set"}</p>
+                      <p className="text-sm text-muted-foreground">{s.email}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {s.grade && <Badge variant="secondary">{s.grade}</Badge>}
+                      {s.school && (
+                        <span className="hidden text-xs text-muted-foreground sm:block">
+                          {s.school}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {s.grade && <Badge variant="secondary">{s.grade}</Badge>}
-                    {s.school && (
-                      <span className="hidden text-xs text-muted-foreground sm:block">
-                        {s.school}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -192,7 +207,6 @@ export default function Admin() {
       {/* Problems Tab */}
       {tab === "problems" && (
         <div className="space-y-6">
-          {/* Add Problem Form */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -234,49 +248,44 @@ export default function Admin() {
                 disabled={adding || !newProblem.title.trim()}
                 className="gap-2"
               >
-                {adding ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Plus className="h-4 w-4" />
-                )}
+                {adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                 Add Problem
               </Button>
             </CardContent>
           </Card>
 
-          {/* Problems List */}
           <Card>
             <CardHeader>
               <CardTitle>All Problems</CardTitle>
-              <CardDescription>Problems visible to all students</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {problems.length === 0 && (
-                  <p className="text-sm text-muted-foreground">No problems added yet.</p>
-                )}
-                {problems.map((p) => (
-                  <div
-                    key={p.id}
-                    className="flex items-center justify-between rounded-lg border p-3"
-                  >
-                    <div>
-                      <p className="font-medium">{p.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {p.subject} · {p.topic} · {p.difficulty}
-                      </p>
+              {dataLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <div className="space-y-2">
+                  {problems.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No problems added yet.</p>
+                  )}
+                  {problems.map((p) => (
+                    <div key={p.id} className="flex items-center justify-between rounded-lg border p-3">
+                      <div>
+                        <p className="font-medium">{p.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {p.subject} · {p.topic} · {p.difficulty}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => deleteProblem(p.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => deleteProblem(p.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

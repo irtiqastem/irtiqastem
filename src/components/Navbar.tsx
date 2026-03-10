@@ -24,7 +24,7 @@ export function Navbar() {
     <nav className="sticky top-0 z-50 border-b bg-card/80 backdrop-blur-lg">
       <div className="container-narrow flex h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2">
-          <img src={logo} alt="Irtiqa STEM" className="h-10 w-10 rounded-full object-cover" />
+          <img src={logo} alt="Irtiqa STEM" className="h-12 w-12 rounded-full object-cover border-2 border-primary/20" />
           <span className="text-lg font-bold text-foreground">
             Irtiqa<span className="text-accent">STEM</span>
           </span>

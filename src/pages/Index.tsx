@@ -26,11 +26,13 @@ export default function Index() {
   const [heroSubtitle, setHeroSubtitle] = useState("Irtiqa STEM bridges the gap between talent and opportunity — providing structured Olympiad preparation and STEM guidance for Pakistan's students in grades 6–9.");
 
   useEffect(() => {
-    // Track visit
-    supabase.from("page_visits").insert([{ page: "/" }]).then(() => {});
+    // Delay all Supabase calls so they don't block rendering
+    const timer = setTimeout(async () => {
+      // Track visit (fire and forget)
+      supabase.from("page_visits").insert([{ page: "/" }]).then(() => {});
 
-    // Load settings
-    supabase.from("site_settings").select("*").then(({ data }) => {
+      // Load settings
+      const { data } = await supabase.from("site_settings").select("*");
       if (!data) return;
       const map: Record<string, string> = {};
       data.forEach((r: any) => { map[r.key] = r.value; });
@@ -42,7 +44,9 @@ export default function Index() {
       if (map.notice_enabled === "true" && map.notice_text && !dismissed) {
         setNotice({ title: map.notice_title || "Announcement", text: map.notice_text });
       }
-    });
+    }, 1500);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const dismissNotice = () => {
@@ -52,27 +56,11 @@ export default function Index() {
 
   return (
     <>
-      {/* Notice Popup */}
       <AnimatePresence>
         {notice && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative w-full max-w-md rounded-xl border-2 border-primary bg-card p-8 shadow-2xl"
-            >
-              <button
-                onClick={dismissNotice}
-                className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-muted/80"
-              >
-                <X className="h-4 w-4" />
-              </button>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-md rounded-xl border-2 border-primary bg-card p-8 shadow-2xl">
+              <button onClick={dismissNotice} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-muted/80"><X className="h-4 w-4" /></button>
               <div className="mb-3 flex items-center gap-2">
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-lg">📢</span>
                 <h3 className="text-xl font-bold">{notice.title}</h3>
@@ -84,7 +72,6 @@ export default function Index() {
         )}
       </AnimatePresence>
 
-      {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${heroBg})` }} />
         <div className="absolute inset-0 hero-gradient opacity-90" />
@@ -93,9 +80,7 @@ export default function Index() {
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-sm text-white/80 backdrop-blur-sm">
               <span className="h-2 w-2 rounded-full bg-accent" /> Non-Profit · Pakistan
             </div>
-            <h1 className="mb-6 text-5xl font-black leading-tight text-white md:text-7xl">
-              {heroTitle}
-            </h1>
+            <h1 className="mb-6 text-5xl font-black leading-tight text-white md:text-7xl">{heroTitle}</h1>
             <p className="mb-10 max-w-2xl text-lg text-white/80">{heroSubtitle}</p>
             <div className="flex flex-wrap gap-4">
               <Button asChild size="lg" className="gold-gradient border-0 font-semibold text-navy">
@@ -109,7 +94,6 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Stats */}
       <section className="border-y bg-card">
         <div className="container-narrow px-4 py-10">
           <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
@@ -124,7 +108,6 @@ export default function Index() {
         </div>
       </section>
 
-      {/* Features */}
       <section className="section-padding">
         <div className="container-narrow px-4">
           <div className="mb-12 text-center">

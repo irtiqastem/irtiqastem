@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Search, X, Send, Filter, CheckCircle, Clock, XCircle, Code2, FileText, ChevronRight, Terminal } from "lucide-react";
+import { MathRenderer } from "@/components/MathRenderer";
+import { MathRenderer } from "@/components/MathRenderer";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -224,7 +226,7 @@ export default function Practice() {
                     {selected.statement && (
                       <div>
                         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Problem Statement</h3>
-                        <div className="rounded-xl bg-muted/40 border p-4 text-sm leading-relaxed whitespace-pre-wrap">{selected.statement}</div>
+                        <MathRenderer content={selected.statement} className="rounded-xl bg-muted/40 border p-4 text-sm leading-relaxed" />
                       </div>
                     )}
                     {testCases.length > 0 && (

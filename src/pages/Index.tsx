@@ -28,7 +28,8 @@ export default function Index() {
 
   useEffect(() => {
     const timer = setTimeout(async () => {
-      supabase.from("page_visits").insert([{ page: "/" }]).then(() => {});
+      const { data: { user: visitUser } } = await supabase.auth.getUser();
+      supabase.from("page_visits").insert([{ page: "/", user_id: visitUser?.id ?? null, is_authenticated: !!visitUser }]).then(() => {});
 
       const [{ data: settings }, { count: studentCount }, { count: problemCount }, { count: submissionCount }, { count: resourceCount }, { data: latestPost }] = await Promise.all([
         supabase.from("site_settings").select("*"),

@@ -129,6 +129,8 @@ export default function Admin() {
   };
 
   const todayVisits = visits.filter(v => new Date(v.visited_at).toDateString() === new Date().toDateString()).length;
+  const signedInVisits = visits.filter(v => v.is_authenticated).length;
+  const guestVisits = visits.filter(v => !v.is_authenticated).length;
   const pageStats = visits.reduce((acc: Record<string, number>, v) => { acc[v.page] = (acc[v.page] || 0) + 1; return acc; }, {});
   const topPages = Object.entries(pageStats).sort((a, b) => b[1] - a[1]).slice(0, 5);
   const pendingCount = submissions.filter(s => s.status === "pending").length;
@@ -174,6 +176,8 @@ export default function Admin() {
           </div>
           <div className="grid gap-4 sm:grid-cols-3">
             <Card><CardContent className="flex items-center gap-4 p-6"><ClipboardList className="h-10 w-10 text-yellow-500" /><div><div className="text-3xl font-bold">{submissions.length}</div><div className="text-xs text-muted-foreground">Total Submissions</div></div></CardContent></Card>
+            <Card><CardContent className="flex items-center gap-4 p-6"><CheckCircle className="h-10 w-10 text-blue-500" /><div><div className="text-3xl font-bold">{signedInVisits}</div><div className="text-xs text-muted-foreground">Signed-In Visits</div></div></CardContent></Card>
+            <Card><CardContent className="flex items-center gap-4 p-6"><Eye className="h-10 w-10 text-gray-400" /><div><div className="text-3xl font-bold">{guestVisits}</div><div className="text-xs text-muted-foreground">Guest Visits</div></div></CardContent></Card>
             <Card><CardContent className="flex items-center gap-4 p-6"><CheckCircle className="h-10 w-10 text-green-500" /><div><div className="text-3xl font-bold">{submissions.filter(s => s.status === "correct").length}</div><div className="text-xs text-muted-foreground">Correct</div></div></CardContent></Card>
             <Card><CardContent className="flex items-center gap-4 p-6"><Newspaper className="h-10 w-10 text-blue-500" /><div><div className="text-3xl font-bold">{posts.length}</div><div className="text-xs text-muted-foreground">Blog Posts</div></div></CardContent></Card>
           </div>

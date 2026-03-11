@@ -21,13 +21,11 @@ export function Navbar() {
   const { user, isAdmin, signOut } = useAuth();
 
   return (
-    <nav className="sticky top-0 z-50 border-b bg-card/80 backdrop-blur-lg">
+    <nav className="sticky top-0 z-50 border-b bg-card/80 backdrop-blur-lg" role="navigation" aria-label="Main navigation">
       <div className="container-narrow flex h-16 items-center justify-between px-4">
-        <Link to="/" className="flex items-center gap-2">
-          <img src={logo} alt="Irtiqa STEM" className="h-12 w-12 rounded-full object-cover border-2 border-primary/20" />
-          <span className="text-lg font-bold text-foreground">
-            Irtiqa<span className="text-accent">STEM</span>
-          </span>
+        <Link to="/" className="flex items-center gap-2" aria-label="Irtiqa STEM Home">
+          <img src={logo} alt="Irtiqa STEM logo" className="h-12 w-12 rounded-full object-cover border-2 border-primary/20" />
+          <span className="text-lg font-bold text-foreground">Irtiqa<span className="text-accent">STEM</span></span>
         </Link>
 
         <div className="hidden items-center gap-1 md:flex">
@@ -42,25 +40,23 @@ export function Navbar() {
           {user ? (
             <>
               {isAdmin && (
-                <Button variant="ghost" size="sm" className="gap-1" onClick={() => navigate("/admin")}>
+                <Button variant="ghost" size="sm" className="gap-1" onClick={() => navigate("/admin")} aria-label="Admin Panel">
                   <Shield className="h-4 w-4" /> Admin
                 </Button>
               )}
-              <Button variant="ghost" size="sm" className="gap-1" onClick={() => navigate("/dashboard")}>
+              <Button variant="ghost" size="sm" className="gap-1" onClick={() => navigate("/dashboard")} aria-label="Dashboard">
                 <LayoutDashboard className="h-4 w-4" /> Dashboard
               </Button>
-              <Button variant="ghost" size="sm" className="gap-1" onClick={signOut}>
-                <LogOut className="h-4 w-4" />
+              <Button variant="ghost" size="sm" className="gap-1" onClick={signOut} aria-label="Sign out">
+                <LogOut className="h-4 w-4" /> Sign Out
               </Button>
             </>
           ) : (
-            <Button size="sm" className="gold-gradient border-0 font-semibold text-navy" onClick={() => navigate("/auth")}>
-              Join Now
-            </Button>
+            <Button size="sm" className="gold-gradient border-0 font-semibold text-navy" onClick={() => navigate("/auth")}>Join Now</Button>
           )}
         </div>
 
-        <button className="md:hidden text-foreground" onClick={() => setMobileOpen(!mobileOpen)}>
+        <button className="md:hidden text-foreground" onClick={() => setMobileOpen(!mobileOpen)} aria-label={mobileOpen ? "Close menu" : "Open menu"}>
           {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </div>
@@ -87,9 +83,7 @@ export function Navbar() {
               </Button>
             </div>
           ) : (
-            <Button size="sm" className="gold-gradient mt-2 w-full border-0 font-semibold text-navy" onClick={() => { navigate("/auth"); setMobileOpen(false); }}>
-              Join Now
-            </Button>
+            <Button size="sm" className="gold-gradient mt-2 w-full border-0 font-semibold text-navy" onClick={() => { navigate("/auth"); setMobileOpen(false); }}>Join Now</Button>
           )}
         </div>
       )}

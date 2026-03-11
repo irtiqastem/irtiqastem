@@ -6,13 +6,6 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import heroBg from "@/assets/hero-bg.jpg";
 
-const stats = [
-  { label: "Students Enrolled", value: "2,500+", icon: Users },
-  { label: "Contests Hosted", value: "45+", icon: Trophy },
-  { label: "Problems Solved", value: "18,000+", icon: Target },
-  { label: "Medals Won", value: "120+", icon: Award },
-];
-
 const features = [
   { icon: BookOpen, title: "IMO Track", description: "Structured preparation for International Mathematical Olympiad through NSTC, PMO, and NMO pathways.", link: "/olympiad-tracks" },
   { icon: Code2, title: "IOI Track", description: "Competitive programming preparation covering C++, algorithms, and data structures for IOI.", link: "/olympiad-tracks" },
@@ -23,27 +16,43 @@ const features = [
 export default function Index() {
   const [notice, setNotice] = useState<{ title: string; text: string } | null>(null);
   const [heroTitle, setHeroTitle] = useState("Explore. Excel. Evolve.");
-  const [heroSubtitle, setHeroSubtitle] = useState("Irtiqa STEM bridges the gap between talent and opportunity — providing structured Olympiad preparation and STEM guidance for Pakistan's students in grades 6–9.");
+  const [heroSubtitle, setHeroSubtitle] = useState("Irtiqa STEM bridges the gap between talent and opportunity — providing structured Olympiad preparation and STEM guidance for Pakistan's students in grades 6–12.");
+  const [stats, setStats] = useState([
+    { label: "Students Enrolled", value: "...", icon: Users },
+    { label: "Problems Available", value: "...", icon: Target },
+    { label: "Submissions Made", value: "...", icon: Trophy },
+    { label: "Resources Available", value: "...", icon: Award },
+  ]);
 
   useEffect(() => {
-    // Delay all Supabase calls so they don't block rendering
     const timer = setTimeout(async () => {
-      // Track visit (fire and forget)
       supabase.from("page_visits").insert([{ page: "/" }]).then(() => {});
 
-      // Load settings
-      const { data } = await supabase.from("site_settings").select("*");
-      if (!data) return;
-      const map: Record<string, string> = {};
-      data.forEach((r: any) => { map[r.key] = r.value; });
+      const [{ data: settings }, { count: studentCount }, { count: problemCount }, { count: submissionCount }, { count: resourceCount }] = await Promise.all([
+        supabase.from("site_settings").select("*"),
+        supabase.from("profiles").select("*", { count: "exact", head: true }),
+        supabase.from("problems").select("*", { count: "exact", head: true }),
+        supabase.from("submissions").select("*", { count: "exact", head: true }),
+        supabase.from("resources").select("*", { count: "exact", head: true }),
+      ]);
 
-      if (map.hero_title) setHeroTitle(map.hero_title);
-      if (map.hero_subtitle) setHeroSubtitle(map.hero_subtitle);
-
-      const dismissed = sessionStorage.getItem("notice_dismissed");
-      if (map.notice_enabled === "true" && map.notice_text && !dismissed) {
-        setNotice({ title: map.notice_title || "Announcement", text: map.notice_text });
+      if (settings) {
+        const map: Record<string, string> = {};
+        settings.forEach((r: any) => { map[r.key] = r.value; });
+        if (map.hero_title) setHeroTitle(map.hero_title);
+        if (map.hero_subtitle) setHeroSubtitle(map.hero_subtitle);
+        const dismissed = sessionStorage.getItem("notice_dismissed");
+        if (map.notice_enabled === "true" && map.notice_text && !dismissed) {
+          setNotice({ title: map.notice_title || "Announcement", text: map.notice_text });
+        }
       }
+
+      setStats([
+        { label: "Students Enrolled", value: `${studentCount ?? 0}+`, icon: Users },
+        { label: "Problems Available", value: `${problemCount ?? 0}+`, icon: Target },
+        { label: "Submissions Made", value: `${submissionCount ?? 0}+`, icon: Trophy },
+        { label: "Resources Available", value: `${resourceCount ?? 0}+`, icon: Award },
+      ]);
     }, 1500);
 
     return () => clearTimeout(timer);
@@ -60,7 +69,7 @@ export default function Index() {
         {notice && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-md rounded-xl border-2 border-primary bg-card p-8 shadow-2xl">
-              <button onClick={dismissNotice} className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-muted/80"><X className="h-4 w-4" /></button>
+              <button onClick={dismissNotice} aria-label="Dismiss notice" className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-muted/80"><X className="h-4 w-4" /></button>
               <div className="mb-3 flex items-center gap-2">
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-lg">📢</span>
                 <h3 className="text-xl font-bold">{notice.title}</h3>

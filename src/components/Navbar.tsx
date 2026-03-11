@@ -12,6 +12,7 @@ const navLinks = [
   { label: "Practice", path: "/practice" },
   { label: "Resources", path: "/resources" },
   { label: "Scholarships", path: "/scholarships" },
+  { label: "Blog", path: "/blog" },
 ];
 
 export function Navbar() {

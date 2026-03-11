@@ -13,8 +13,10 @@ const features = [
   { icon: Trophy, title: "Practice & Compete", description: "Solve curated problems, participate in contests, and track your progress on the leaderboard.", link: "/practice" },
 ];
 
+type Popup = { type: "notice"; title: string; text: string } | { type: "blog"; id: number; title: string; excerpt: string };
+
 export default function Index() {
-  const [notice, setNotice] = useState<{ title: string; text: string } | null>(null);
+  const [popup, setPopup] = useState<Popup | null>(null);
   const [heroTitle, setHeroTitle] = useState("Explore. Excel. Evolve.");
   const [heroSubtitle, setHeroSubtitle] = useState("Irtiqa STEM bridges the gap between talent and opportunity — providing structured Olympiad preparation and STEM guidance for Pakistan's students in grades 6–12.");
   const [stats, setStats] = useState([
@@ -28,12 +30,13 @@ export default function Index() {
     const timer = setTimeout(async () => {
       supabase.from("page_visits").insert([{ page: "/" }]).then(() => {});
 
-      const [{ data: settings }, { count: studentCount }, { count: problemCount }, { count: submissionCount }, { count: resourceCount }] = await Promise.all([
+      const [{ data: settings }, { count: studentCount }, { count: problemCount }, { count: submissionCount }, { count: resourceCount }, { data: latestPost }] = await Promise.all([
         supabase.from("site_settings").select("*"),
         supabase.from("profiles").select("*", { count: "exact", head: true }),
         supabase.from("problems").select("*", { count: "exact", head: true }),
         supabase.from("submissions").select("*", { count: "exact", head: true }),
         supabase.from("resources").select("*", { count: "exact", head: true }),
+        supabase.from("blog_posts").select("id, title, excerpt, content").eq("published", true).order("created_at", { ascending: false }).limit(1).single(),
       ]);
 
       if (settings) {
@@ -41,9 +44,16 @@ export default function Index() {
         settings.forEach((r: any) => { map[r.key] = r.value; });
         if (map.hero_title) setHeroTitle(map.hero_title);
         if (map.hero_subtitle) setHeroSubtitle(map.hero_subtitle);
-        const dismissed = sessionStorage.getItem("notice_dismissed");
-        if (map.notice_enabled === "true" && map.notice_text && !dismissed) {
-          setNotice({ title: map.notice_title || "Announcement", text: map.notice_text });
+
+        // Check blog popup first, then notice
+        const seenPosts = JSON.parse(localStorage.getItem("seen_blog_posts") || "[]");
+        if (latestPost && !seenPosts.includes(latestPost.id)) {
+          setPopup({ type: "blog", id: latestPost.id, title: latestPost.title, excerpt: latestPost.excerpt || latestPost.content?.slice(0, 150) });
+        } else {
+          const dismissed = sessionStorage.getItem("notice_dismissed");
+          if (map.notice_enabled === "true" && map.notice_text && !dismissed) {
+            setPopup({ type: "notice", title: map.notice_title || "Announcement", text: map.notice_text });
+          }
         }
       }
 
@@ -58,24 +68,40 @@ export default function Index() {
     return () => clearTimeout(timer);
   }, []);
 
-  const dismissNotice = () => {
-    sessionStorage.setItem("notice_dismissed", "1");
-    setNotice(null);
+  const dismissPopup = () => {
+    if (popup?.type === "blog") {
+      const seen = JSON.parse(localStorage.getItem("seen_blog_posts") || "[]");
+      seen.push(popup.id);
+      localStorage.setItem("seen_blog_posts", JSON.stringify(seen));
+    } else {
+      sessionStorage.setItem("notice_dismissed", "1");
+    }
+    setPopup(null);
   };
 
   return (
     <>
       <AnimatePresence>
-        {notice && (
+        {popup && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative w-full max-w-md rounded-xl border-2 border-primary bg-card p-8 shadow-2xl">
-              <button onClick={dismissNotice} aria-label="Dismiss notice" className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-muted/80"><X className="h-4 w-4" /></button>
+              <button onClick={dismissPopup} aria-label="Dismiss" className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-muted/80"><X className="h-4 w-4" /></button>
               <div className="mb-3 flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-lg">📢</span>
-                <h3 className="text-xl font-bold">{notice.title}</h3>
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-lg">{popup.type === "blog" ? "📝" : "📢"}</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-primary">{popup.type === "blog" ? "New Post" : "Announcement"}</span>
               </div>
-              <p className="text-muted-foreground">{notice.text}</p>
-              <Button onClick={dismissNotice} className="mt-6 w-full">Got it</Button>
+              <h3 className="mb-2 text-xl font-bold">{popup.title}</h3>
+              <p className="text-muted-foreground text-sm">{popup.type === "blog" ? popup.excerpt : popup.text}</p>
+              <div className="mt-6 flex gap-3">
+                {popup.type === "blog" && (
+                  <Button asChild className="flex-1" onClick={dismissPopup}>
+                    <Link to="/blog">Read Post</Link>
+                  </Button>
+                )}
+                <Button onClick={dismissPopup} variant={popup.type === "blog" ? "outline" : "default"} className="flex-1">
+                  {popup.type === "blog" ? "Dismiss" : "Got it"}
+                </Button>
+              </div>
             </motion.div>
           </motion.div>
         )}

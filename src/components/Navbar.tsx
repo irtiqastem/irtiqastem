@@ -13,6 +13,8 @@ const navLinks = [
   { label: "Resources", path: "/resources" },
   { label: "Scholarships", path: "/scholarships" },
   { label: "Blog", path: "/blog" },
+  { label: "Blog", path: "/blog" },
+  { label: "Blog", path: "/blog" },
 ];
 
 export function Navbar() {

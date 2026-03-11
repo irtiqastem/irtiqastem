@@ -42,14 +42,23 @@ export default function Admin() {
     const [{ data: s }, { data: p }, { data: sub }, { data: v }, { data: st }, { data: bp }] = await Promise.all([
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
       supabase.from("problems").select("*").order("created_at", { ascending: false }),
-      supabase.from("submissions").select("*, profiles(full_name, email), problems(title)").order("submitted_at", { ascending: false }),
+      supabase.from("submissions").select("*").order("submitted_at", { ascending: false }),
       supabase.from("page_visits").select("*").order("visited_at", { ascending: false }).limit(500),
       supabase.from("site_settings").select("*"),
       supabase.from("blog_posts").select("*").order("created_at", { ascending: false }),
     ]);
+    const profileMap: Record<string, any> = {};
+    (s ?? []).forEach((prof: any) => { profileMap[prof.id] = prof; });
+    const problemMap: Record<number, any> = {};
+    (p ?? []).forEach((prob: any) => { problemMap[prob.id] = prob; });
+    const enriched = (sub ?? []).map((item: any) => ({
+      ...item,
+      profiles: profileMap[item.user_id] ?? null,
+      problems: problemMap[item.problem_id] ?? null,
+    }));
     setStudents(s ?? []);
     setProblems(p ?? []);
-    setSubmissions(sub ?? []);
+    setSubmissions(enriched);
     setVisits(v ?? []);
     setPosts(bp ?? []);
     const m: Record<string, string> = {};

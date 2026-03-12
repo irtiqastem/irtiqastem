@@ -1,18 +1,18 @@
 import { InlineMath, BlockMath } from "react-katex";
 import "katex/dist/katex.min.css";
 
-/**
- * Renders a string that may contain LaTeX math:
- *   - Block math:  $$...$$ or \[...\]
- *   - Inline math: $...$ or \(...\)
- * Plain text between math is rendered normally.
- */
+function AsyNote() {
+  return (
+    <span className="my-3 flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700">
+      <span>📐</span>
+      <span>Diagram available on <a href="https://artofproblemsolving.com" target="_blank" rel="noopener noreferrer" className="underline font-medium">AoPS</a></span>
+    </span>
+  );
+}
+
 export function MathText({ text }: { text: string }) {
   if (!text) return null;
-
-  // Split on block math first ($$...$$), then inline ($...$)
   const parts = splitMath(text);
-
   return (
     <span className="math-text leading-relaxed">
       {parts.map((part, i) => {
@@ -26,7 +26,9 @@ export function MathText({ text }: { text: string }) {
         if (part.type === "inline") {
           return <InlineMath key={i} math={part.content} />;
         }
-        // Plain text — preserve newlines
+        if (part.type === "asy") {
+          return <AsyNote key={i} />;
+        }
         return (
           <span key={i} className="whitespace-pre-wrap">
             {part.content}
@@ -37,34 +39,31 @@ export function MathText({ text }: { text: string }) {
   );
 }
 
-type Part = { type: "block" | "inline" | "text"; content: string };
+type PartType = "block" | "inline" | "text" | "asy";
+type Part = { type: PartType; content: string };
 
 function splitMath(input: string): Part[] {
   const parts: Part[] = [];
-  // Regex: match $$...$$ (block), \[...\] (block), $...$ (inline), \(...\) (inline)
-  const regex = /\$\$([\s\S]*?)\$\$|\\\[([\s\S]*?)\\\]|\$([^$\n]+?)\$|\\\(([^)]*?)\\\)/g;
+  const regex =
+    /\[asy\]([\s\S]*?)\[\/asy\]|\$\$([\s\S]*?)\$\$|\\\[([\s\S]*?)\\\]|\$([^$\n]+?)\$|\\\(([^)]*?)\\\)/g;
 
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
   while ((match = regex.exec(input)) !== null) {
-    // Push plain text before this match
     if (match.index > lastIndex) {
       parts.push({ type: "text", content: input.slice(lastIndex, match.index) });
     }
-
-    if (match[1] !== undefined || match[2] !== undefined) {
-      // Block math
-      parts.push({ type: "block", content: match[1] ?? match[2] });
+    if (match[1] !== undefined) {
+      parts.push({ type: "asy", content: match[1] });
+    } else if (match[2] !== undefined || match[3] !== undefined) {
+      parts.push({ type: "block", content: match[2] ?? match[3] });
     } else {
-      // Inline math
-      parts.push({ type: "inline", content: match[3] ?? match[4] ?? "" });
+      parts.push({ type: "inline", content: match[4] ?? match[5] ?? "" });
     }
-
     lastIndex = regex.lastIndex;
   }
 
-  // Push remaining plain text
   if (lastIndex < input.length) {
     parts.push({ type: "text", content: input.slice(lastIndex) });
   }

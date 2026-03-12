@@ -56,7 +56,6 @@ export default function Practice() {
     const load = async () => {
       const { data: p } = await supabase.from("problems").select("*").order("id");
       setProblems(p ?? []);
-
       if (user) {
         const { data: s } = await supabase.from("submissions").select("*").eq("user_id", user.id);
         setSubmissions(s ?? []);
@@ -82,53 +81,32 @@ export default function Practice() {
     setSelected(problem);
     setAnswer("");
     if (existing) {
-      setResult({
-        correct: existing.status === "correct",
-        correctAnswer: problem.correct_answer,
-        solution: problem.solution,
-      });
+      setResult({ correct: existing.status === "correct", correctAnswer: problem.correct_answer, solution: problem.solution });
     } else {
       setResult(null);
     }
   };
 
-  const closeDialog = () => {
-    setSelected(null);
-    setAnswer("");
-    setResult(null);
-  };
+  const closeDialog = () => { setSelected(null); setAnswer(""); setResult(null); };
 
   const submitAnswer = async () => {
     if (!user) { toast.error("Please sign in to submit answers."); return; }
     if (!answer.trim()) { toast.error("Please enter your answer first."); return; }
     if (!selected || getSubmission(selected.id)) return;
-
     setSubmitting(true);
-
     const userAnswer = answer.trim().toLowerCase().replace(/\s+/g, "");
     const correctAnswer = (selected.correct_answer || "").trim().toLowerCase().replace(/\s+/g, "");
     const isCorrect = userAnswer === correctAnswer;
     const status = isCorrect ? "correct" : "wrong";
     const points = isCorrect ? 10 : 0;
-
     const { data, error } = await supabase.from("submissions").insert([{
-      user_id: user.id,
-      problem_id: selected.id,
-      answer: answer.trim(),
-      status,
-      points,
-      submitted_at: new Date().toISOString(),
+      user_id: user.id, problem_id: selected.id, answer: answer.trim(),
+      status, points, submitted_at: new Date().toISOString(),
     }]).select().single();
-
-    if (error) {
-      toast.error(error.message);
-    } else {
+    if (error) { toast.error(error.message); }
+    else {
       setSubmissions(prev => [...prev, data]);
-      setResult({
-        correct: isCorrect,
-        correctAnswer: selected.correct_answer,
-        solution: selected.solution,
-      });
+      setResult({ correct: isCorrect, correctAnswer: selected.correct_answer, solution: selected.solution });
       if (isCorrect) toast.success("Correct! Well done! 🎉");
       else toast.error("Wrong answer. Study the solution below.");
     }
@@ -143,11 +121,7 @@ export default function Practice() {
         <Badge className="ml-1 bg-green-100 text-green-700 text-xs">+{sub.points}pts</Badge>
       </span>
     );
-    return (
-      <span className="flex items-center gap-1 text-xs font-medium text-red-500">
-        <XCircle className="h-3.5 w-3.5" /> Wrong
-      </span>
-    );
+    return <span className="flex items-center gap-1 text-xs font-medium text-red-500"><XCircle className="h-3.5 w-3.5" /> Wrong</span>;
   };
 
   return (
@@ -156,9 +130,7 @@ export default function Practice() {
         <div className="container-narrow px-4">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <h1 className="mb-3 text-3xl font-bold text-primary-foreground md:text-5xl">Practice Problems</h1>
-            <p className="max-w-2xl text-primary-foreground/80 text-lg">
-              Sharpen your skills with curated problems. Submit your answer and see the solution instantly.
-            </p>
+            <p className="max-w-2xl text-primary-foreground/80 text-lg">Sharpen your skills with curated problems. Submit your answer and see the solution instantly.</p>
           </motion.div>
         </div>
       </section>
@@ -202,46 +174,28 @@ export default function Practice() {
                 <span className="col-span-2">Track</span>
                 <span className="col-span-2 text-right">Status</span>
               </div>
-
               {filtered.map((problem, i) => {
                 const sub = getSubmission(problem.id);
                 return (
-                  <motion.div
-                    key={problem.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: i * 0.03 }}
+                  <motion.div key={problem.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
                     onClick={() => openProblem(problem)}
-                    className="grid grid-cols-1 cursor-pointer items-center gap-2 border-b px-6 py-4 last:border-0 hover:bg-muted/30 transition-colors sm:grid-cols-12 sm:gap-4"
-                  >
+                    className="grid grid-cols-1 cursor-pointer items-center gap-2 border-b px-6 py-4 last:border-0 hover:bg-muted/30 transition-colors sm:grid-cols-12 sm:gap-4">
                     <span className="hidden text-sm font-mono text-muted-foreground sm:block sm:col-span-1">{i + 1}</span>
                     <div className="sm:col-span-5 flex items-center gap-2">
-                      {sub && (sub.status === "correct"
-                        ? <CheckCircle className="h-4 w-4 shrink-0 text-green-500" />
-                        : <XCircle className="h-4 w-4 shrink-0 text-red-400" />
-                      )}
+                      {sub && (sub.status === "correct" ? <CheckCircle className="h-4 w-4 shrink-0 text-green-500" /> : <XCircle className="h-4 w-4 shrink-0 text-red-400" />)}
                       <div>
                         <span className="font-medium">{problem.title}</span>
-                        {problem.topic && (
-                          <div className="mt-1"><Badge variant="secondary" className="text-xs">{problem.topic}</Badge></div>
-                        )}
+                        {problem.topic && <div className="mt-1"><Badge variant="secondary" className="text-xs">{problem.topic}</Badge></div>}
                       </div>
                     </div>
                     <div className="sm:col-span-2">
-                      <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${difficultyColors[problem.difficulty] || "bg-gray-100 text-gray-700"}`}>
-                        {problem.difficulty}
-                      </span>
+                      <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${difficultyColors[problem.difficulty] || "bg-gray-100 text-gray-700"}`}>{problem.difficulty}</span>
                     </div>
-                    <div className="sm:col-span-2">
-                      <Badge variant="outline" className="text-xs">{problem.track || "IMO"}</Badge>
-                    </div>
-                    <div className="flex items-center justify-end sm:col-span-2">
-                      {statusBadge(sub)}
-                    </div>
+                    <div className="sm:col-span-2"><Badge variant="outline" className="text-xs">{problem.track || "IMO"}</Badge></div>
+                    <div className="flex items-center justify-end sm:col-span-2">{statusBadge(sub)}</div>
                   </motion.div>
                 );
               })}
-
               {filtered.length === 0 && (
                 <div className="px-6 py-12 text-center text-muted-foreground">
                   {problems.length === 0 ? "No problems added yet. Check back soon!" : "No problems match your filters."}
@@ -252,17 +206,13 @@ export default function Practice() {
         </div>
       </section>
 
-      {/* Problem Dialog */}
       <Dialog open={!!selected} onOpenChange={(o) => { if (!o) closeDialog(); }}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{selected?.title}</DialogTitle>
+            <DialogTitle className="text-xl">{selected?.title}</DialogTitle>
           </DialogHeader>
-
           <div className="flex flex-wrap gap-2 mb-2">
-            <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${difficultyColors[selected?.difficulty || ""] || "bg-gray-100 text-gray-700"}`}>
-              {selected?.difficulty}
-            </span>
+            <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${difficultyColors[selected?.difficulty || ""] || "bg-gray-100 text-gray-700"}`}>{selected?.difficulty}</span>
             <Badge variant="outline" className="text-xs">{selected?.track || "IMO"}</Badge>
             {selected?.topic && <Badge variant="secondary" className="text-xs">{selected.topic}</Badge>}
           </div>
@@ -278,27 +228,18 @@ export default function Practice() {
               {result.correct ? (
                 <div className="flex items-center gap-3 rounded-lg bg-green-50 border border-green-200 px-4 py-3">
                   <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
-                  <div>
-                    <p className="font-semibold text-green-700">Correct! Way to go! 🎉</p>
-                    <p className="text-xs text-green-600">+10 points earned</p>
-                  </div>
+                  <div><p className="font-semibold text-green-700">Correct! Way to go! 🎉</p><p className="text-xs text-green-600">+10 points earned</p></div>
                 </div>
               ) : (
                 <div className="flex items-center gap-3 rounded-lg bg-red-50 border border-red-200 px-4 py-3">
                   <XCircle className="h-5 w-5 text-red-500 shrink-0" />
-                  <div>
-                    <p className="font-semibold text-red-600">Wrong Answer</p>
-                    <p className="text-xs text-red-500">The correct answer was: <span className="font-bold">{result.correctAnswer}</span></p>
-                  </div>
+                  <div><p className="font-semibold text-red-600">Wrong Answer</p><p className="text-xs text-red-500">The correct answer was: <span className="font-bold">{result.correctAnswer}</span></p></div>
                 </div>
               )}
-
               {result.solution && (
                 <Tabs defaultValue="solution">
                   <TabsList className="w-full">
-                    <TabsTrigger value="solution" className="flex-1 gap-1.5">
-                      <Lightbulb className="h-3.5 w-3.5" /> Solution
-                    </TabsTrigger>
+                    <TabsTrigger value="solution" className="flex-1 gap-1.5"><Lightbulb className="h-3.5 w-3.5" /> Solution</TabsTrigger>
                   </TabsList>
                   <TabsContent value="solution">
                     <div className="rounded-lg border bg-card p-4 text-sm leading-relaxed text-foreground">
@@ -307,12 +248,9 @@ export default function Practice() {
                   </TabsContent>
                 </Tabs>
               )}
-
               <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-                <Lock className="h-3.5 w-3.5" />
-                This problem is locked — one attempt only.
+                <Lock className="h-3.5 w-3.5" /> This problem is locked — one attempt only.
               </div>
-
               <Button variant="outline" className="w-full" onClick={closeDialog}>Close</Button>
             </div>
           ) : (
@@ -321,18 +259,14 @@ export default function Practice() {
                 <>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium">Your Answer</label>
-                    <Input
-                      placeholder="Enter your answer (e.g. 3.75)"
-                      value={answer}
+                    <Input placeholder="Enter your answer (e.g. 3.75)" value={answer}
                       onChange={(e) => setAnswer(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter" && answer.trim()) submitAnswer(); }}
-                      autoFocus
-                    />
+                      autoFocus />
                     <p className="mt-1 text-xs text-muted-foreground">Press Enter or click Submit. You have one attempt only.</p>
                   </div>
                   <Button onClick={submitAnswer} disabled={submitting || !answer.trim()} className="w-full gap-2">
-                    {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                    Submit Answer
+                    {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Submit Answer
                   </Button>
                 </>
               ) : (

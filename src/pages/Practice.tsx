@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { MathText } from "@/components/MathText";
 
 type Problem = {
   id: number;
@@ -267,7 +268,9 @@ export default function Practice() {
           </div>
 
           {selected?.statement && (
-            <div className="rounded-lg bg-muted p-4 text-sm leading-relaxed">{selected.statement}</div>
+            <div className="rounded-lg bg-muted p-4 text-sm leading-relaxed">
+              <MathText text={selected.statement} />
+            </div>
           )}
 
           {result ? (
@@ -298,8 +301,8 @@ export default function Practice() {
                     </TabsTrigger>
                   </TabsList>
                   <TabsContent value="solution">
-                    <div className="rounded-lg border bg-card p-4 text-sm leading-relaxed whitespace-pre-wrap text-foreground">
-                      {result.solution}
+                    <div className="rounded-lg border bg-card p-4 text-sm leading-relaxed text-foreground">
+                      <MathText text={result.solution} />
                     </div>
                   </TabsContent>
                 </Tabs>

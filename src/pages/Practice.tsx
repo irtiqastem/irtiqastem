@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Search, X, Send, Filter, CheckCircle, Clock, XCircle, Code2, FileText, ChevronRight, Terminal } from "lucide-react";
 import { MathRenderer } from "@/components/MathRenderer";
-import { MathRenderer } from "@/components/MathRenderer";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 

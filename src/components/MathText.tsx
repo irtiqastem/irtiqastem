@@ -1,18 +1,11 @@
 import { InlineMath, BlockMath } from "react-katex";
 import "katex/dist/katex.min.css";
 
-function AsyNote() {
-  return (
-    <span className="my-3 flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-700">
-      <span>📐</span>
-      <span>Diagram available on <a href="https://artofproblemsolving.com" target="_blank" rel="noopener noreferrer" className="underline font-medium">AoPS</a></span>
-    </span>
-  );
-}
-
 export function MathText({ text }: { text: string }) {
   if (!text) return null;
+
   const parts = splitMath(text);
+
   return (
     <span className="math-text leading-relaxed">
       {parts.map((part, i) => {
@@ -27,7 +20,7 @@ export function MathText({ text }: { text: string }) {
           return <InlineMath key={i} math={part.content} />;
         }
         if (part.type === "asy") {
-          return <AsyNote key={i} />;
+          return null;
         }
         return (
           <span key={i} className="whitespace-pre-wrap">
@@ -54,6 +47,7 @@ function splitMath(input: string): Part[] {
     if (match.index > lastIndex) {
       parts.push({ type: "text", content: input.slice(lastIndex, match.index) });
     }
+
     if (match[1] !== undefined) {
       parts.push({ type: "asy", content: match[1] });
     } else if (match[2] !== undefined || match[3] !== undefined) {
@@ -61,6 +55,7 @@ function splitMath(input: string): Part[] {
     } else {
       parts.push({ type: "inline", content: match[4] ?? match[5] ?? "" });
     }
+
     lastIndex = regex.lastIndex;
   }
 

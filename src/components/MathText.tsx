@@ -4,14 +4,21 @@ import "katex/dist/katex.min.css";
 export function MathText({ text }: { text: string }) {
   if (!text) return null;
 
-  const parts = splitMath(text);
+  let cleaned = text.replace(/\[asy\][\s\S]*?\[\/asy\]/g, "");
+
+  cleaned = cleaned.replace(
+    /(\\begin\{[a-z*]+\}[\s\S]*?\\end\{[a-z*]+\})/g,
+    "$$\n$1\n$$"
+  );
+
+  const parts = splitMath(cleaned);
 
   return (
     <span className="math-text leading-relaxed">
       {parts.map((part, i) => {
         if (part.type === "block") {
           return (
-            <span key={i} className="block my-3 overflow-x-auto">
+            <span key={i} className="block my-4 overflow-x-auto text-center">
               <BlockMath math={part.content} />
             </span>
           );
@@ -19,12 +26,14 @@ export function MathText({ text }: { text: string }) {
         if (part.type === "inline") {
           return <InlineMath key={i} math={part.content} />;
         }
-        if (part.type === "asy") {
-          return null;
-        }
         return (
-          <span key={i} className="whitespace-pre-wrap">
-            {part.content}
+          <span key={i}>
+            {part.content.split("\n").map((line, j, arr) => (
+              <span key={j}>
+                {line}
+                {j < arr.length - 1 && <br />}
+              </span>
+            ))}
           </span>
         );
       })}
@@ -32,13 +41,12 @@ export function MathText({ text }: { text: string }) {
   );
 }
 
-type PartType = "block" | "inline" | "text" | "asy";
-type Part = { type: PartType; content: string };
+type Part = { type: "block" | "inline" | "text"; content: string };
 
 function splitMath(input: string): Part[] {
   const parts: Part[] = [];
   const regex =
-    /\[asy\]([\s\S]*?)\[\/asy\]|\$\$([\s\S]*?)\$\$|\\\[([\s\S]*?)\\\]|\$([^$\n]+?)\$|\\\(([^)]*?)\\\)/g;
+    /\$\$([\s\S]*?)\$\$|\\\[([\s\S]*?)\\\]|\$([^$\n]+?)\$|\\\(([^)]*?)\\\)/g;
 
   let lastIndex = 0;
   let match: RegExpExecArray | null;
@@ -48,12 +56,10 @@ function splitMath(input: string): Part[] {
       parts.push({ type: "text", content: input.slice(lastIndex, match.index) });
     }
 
-    if (match[1] !== undefined) {
-      parts.push({ type: "asy", content: match[1] });
-    } else if (match[2] !== undefined || match[3] !== undefined) {
-      parts.push({ type: "block", content: match[2] ?? match[3] });
+    if (match[1] !== undefined || match[2] !== undefined) {
+      parts.push({ type: "block", content: match[1] ?? match[2] });
     } else {
-      parts.push({ type: "inline", content: match[4] ?? match[5] ?? "" });
+      parts.push({ type: "inline", content: match[3] ?? match[4] ?? "" });
     }
 
     lastIndex = regex.lastIndex;

@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Shield, Loader2, Users, BookOpen, Trash2, Plus, BarChart3, Bell, Eye, TrendingUp, FileText, Save, ClipboardList, CheckCircle, XCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Shield, Loader2, Users, BookOpen, Trash2, Plus, BarChart3, Bell, Eye, TrendingUp, FileText, Save, ClipboardList, CheckCircle, XCircle, Pencil, X } from "lucide-react";
 import { toast } from "sonner";
 
 type Tab = "overview" | "students" | "problems" | "submissions" | "notice" | "content";
@@ -28,6 +29,8 @@ export default function Admin() {
   const [reviewId, setReviewId] = useState<number | null>(null);
   const [feedback, setFeedback] = useState("");
   const [points, setPoints] = useState("10");
+  const [editProblem, setEditProblem] = useState<any | null>(null);
+  const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -72,6 +75,28 @@ export default function Admin() {
     const { error } = await supabase.from("problems").delete().eq("id", id);
     if (error) toast.error(error.message);
     else setProblems(problems.filter((p) => p.id !== id));
+  };
+
+  const updateProblem = async () => {
+    if (!editProblem || !editProblem.title.trim() || !editProblem.correct_answer?.trim()) return;
+    setUpdating(true);
+    const { error } = await supabase.from("problems").update({
+      title: editProblem.title,
+      subject: editProblem.subject,
+      topic: editProblem.topic,
+      difficulty: editProblem.difficulty,
+      track: editProblem.track,
+      statement: editProblem.statement,
+      correct_answer: editProblem.correct_answer,
+      solution: editProblem.solution,
+    }).eq("id", editProblem.id);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Problem updated!");
+      setProblems(prev => prev.map(p => p.id === editProblem.id ? { ...p, ...editProblem } : p));
+      setEditProblem(null);
+    }
+    setUpdating(false);
   };
 
   const reviewSubmission = async (id: number, status: "correct" | "wrong") => {
@@ -167,9 +192,38 @@ export default function Admin() {
             <Textarea placeholder="Solution explanation (shown to student after submitting)" value={newProblem.solution} onChange={(e) => setNewProblem({ ...newProblem, solution: e.target.value })} rows={4} />
             <Button onClick={addProblem} disabled={adding || !newProblem.title.trim() || !newProblem.correct_answer.trim()} className="gap-2">{adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add Problem</Button>
           </CardContent></Card>
-          <Card><CardHeader><CardTitle>All Problems ({problems.length})</CardTitle></CardHeader><CardContent><div className="space-y-2">{dataLoading && <Loader2 className="h-4 w-4 animate-spin" />}{!dataLoading && problems.length === 0 && <p className="text-sm text-muted-foreground">No problems yet.</p>}{problems.map((p) => (<div key={p.id} className="flex items-center justify-between rounded-lg border p-3"><div><p className="font-medium">{p.title}</p><p className="text-xs text-muted-foreground">{p.subject} · {p.topic} · {p.difficulty} · {p.track}</p></div><Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteProblem(p.id)}><Trash2 className="h-4 w-4" /></Button></div>))}</div></CardContent></Card>
+          <Card><CardHeader><CardTitle>All Problems ({problems.length})</CardTitle></CardHeader><CardContent><div className="space-y-2">{dataLoading && <Loader2 className="h-4 w-4 animate-spin" />}{!dataLoading && problems.length === 0 && <p className="text-sm text-muted-foreground">No problems yet.</p>}{problems.map((p) => (<div key={p.id} className="flex items-center justify-between rounded-lg border p-3"><div><p className="font-medium">{p.title}</p><p className="text-xs text-muted-foreground">{p.subject} · {p.topic} · {p.difficulty} · {p.track}</p></div><div className="flex gap-1"><Button variant="ghost" size="sm" className="text-primary" onClick={() => setEditProblem({ ...p })}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteProblem(p.id)}><Trash2 className="h-4 w-4" /></Button></div></div>))}</div></CardContent></Card>
         </div>
       )}
+
+      {/* Edit Problem Dialog */}
+      <Dialog open={!!editProblem} onOpenChange={(o) => { if (!o) setEditProblem(null); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Pencil className="h-4 w-4" /> Edit Problem</DialogTitle>
+          </DialogHeader>
+          {editProblem && (
+            <div className="space-y-3 mt-2">
+              <Input placeholder="Problem title *" value={editProblem.title} onChange={(e) => setEditProblem({ ...editProblem, title: e.target.value })} />
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <select className="rounded-md border bg-background px-3 py-2 text-sm" value={editProblem.subject} onChange={(e) => setEditProblem({ ...editProblem, subject: e.target.value })}><option>Mathematics</option><option>Informatics</option></select>
+                <Input placeholder="Topic" value={editProblem.topic || ""} onChange={(e) => setEditProblem({ ...editProblem, topic: e.target.value })} />
+                <select className="rounded-md border bg-background px-3 py-2 text-sm" value={editProblem.difficulty} onChange={(e) => setEditProblem({ ...editProblem, difficulty: e.target.value })}><option>Easy</option><option>Medium</option><option>Hard</option></select>
+                <select className="rounded-md border bg-background px-3 py-2 text-sm" value={editProblem.track} onChange={(e) => setEditProblem({ ...editProblem, track: e.target.value })}><option>IMO</option><option>IOI</option></select>
+              </div>
+              <Textarea placeholder="Problem statement" value={editProblem.statement || ""} onChange={(e) => setEditProblem({ ...editProblem, statement: e.target.value })} rows={4} />
+              <Input placeholder="Correct answer *" value={editProblem.correct_answer || ""} onChange={(e) => setEditProblem({ ...editProblem, correct_answer: e.target.value })} />
+              <Textarea placeholder="Solution explanation" value={editProblem.solution || ""} onChange={(e) => setEditProblem({ ...editProblem, solution: e.target.value })} rows={4} />
+              <div className="flex gap-2 pt-1">
+                <Button onClick={updateProblem} disabled={updating || !editProblem.title.trim() || !editProblem.correct_answer?.trim()} className="flex-1 gap-2">
+                  {updating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save Changes
+                </Button>
+                <Button variant="outline" onClick={() => setEditProblem(null)} className="gap-2"><X className="h-4 w-4" /> Cancel</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {tab === "submissions" && (
         <div className="space-y-3">

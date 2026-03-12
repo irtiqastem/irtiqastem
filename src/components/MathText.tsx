@@ -1,13 +1,14 @@
 import { InlineMath, BlockMath } from "react-katex";
 import "katex/dist/katex.min.css";
 
+function stripAsymptote(text: string): string {
+  return text.replace(/\[asy\][\s\S]*?\[\/asy\]/gi, "");
+}
+
 export function MathText({ text }: { text: string }) {
   if (!text) return null;
-
-  let cleaned = text.replace(/\[asy\][\s\S]*?\[\/asy\]/gi, "");
-
+  const cleaned = stripAsymptote(text);
   const parts = splitMath(cleaned.trim());
-
   return (
     <span className="math-text leading-relaxed">
       {parts.map((part, i) => {
@@ -19,19 +20,13 @@ export function MathText({ text }: { text: string }) {
           );
         }
         if (part.type === "inline") {
-          try {
-            return <InlineMath key={i} math={part.content} />;
-          } catch {
-            return <span key={i}>{part.content}</span>;
-          }
+          try { return <InlineMath key={i} math={part.content} />; }
+          catch { return <span key={i}>{part.content}</span>; }
         }
         return (
           <span key={i}>
             {part.content.split("\n").map((line, j, arr) => (
-              <span key={j}>
-                {line}
-                {j < arr.length - 1 && <br />}
-              </span>
+              <span key={j}>{line}{j < arr.length - 1 && <br />}</span>
             ))}
           </span>
         );
@@ -44,33 +39,18 @@ type Part = { type: "block" | "inline" | "text"; content: string };
 
 function splitMath(input: string): Part[] {
   const parts: Part[] = [];
-  const regex =
-    /(\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\})|(\$\$([\s\S]*?)\$\$)|(\\\[([\s\S]*?)\\\])|(\$([^$\n]+?)\$)|(\\\(([^\)]*?)\\\))/g;
-
+  const regex = /(\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\})|(\$\$([\s\S]*?)\$\$)|(\\\[([\s\S]*?)\\\])|(\$([^$\n]+?)\$)|(\\\(([^\)]*?)\\\))/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
-
   while ((match = regex.exec(input)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push({ type: "text", content: input.slice(lastIndex, match.index) });
-    }
-    if (match[1] !== undefined) {
-      parts.push({ type: "block", content: match[1] });
-    } else if (match[2] !== undefined) {
-      parts.push({ type: "block", content: match[3] ?? "" });
-    } else if (match[4] !== undefined) {
-      parts.push({ type: "block", content: match[5] ?? "" });
-    } else if (match[6] !== undefined) {
-      parts.push({ type: "inline", content: match[7] ?? "" });
-    } else if (match[8] !== undefined) {
-      parts.push({ type: "inline", content: match[9] ?? "" });
-    }
+    if (match.index > lastIndex) parts.push({ type: "text", content: input.slice(lastIndex, match.index) });
+    if (match[1] !== undefined) parts.push({ type: "block", content: match[1] });
+    else if (match[2] !== undefined) parts.push({ type: "block", content: match[3] ?? "" });
+    else if (match[4] !== undefined) parts.push({ type: "block", content: match[5] ?? "" });
+    else if (match[6] !== undefined) parts.push({ type: "inline", content: match[7] ?? "" });
+    else if (match[8] !== undefined) parts.push({ type: "inline", content: match[9] ?? "" });
     lastIndex = regex.lastIndex;
   }
-
-  if (lastIndex < input.length) {
-    parts.push({ type: "text", content: input.slice(lastIndex) });
-  }
-
+  if (lastIndex < input.length) parts.push({ type: "text", content: input.slice(lastIndex) });
   return parts;
 }

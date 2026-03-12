@@ -26,6 +26,8 @@ export default function Admin() {
   const [newProblem, setNewProblem] = useState({ title: "", subject: "Mathematics", topic: "", difficulty: "Easy", track: "IMO", statement: "" });
   const [newPost, setNewPost] = useState({ title: "", content: "", excerpt: "", author: "Irtiqa STEM", category: "", published: true });
   const [adding, setAdding] = useState(false);
+  const [editingProblem, setEditingProblem] = useState<any | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
   const [postAdding, setPostAdding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [reviewId, setReviewId] = useState<number | null>(null);
@@ -103,6 +105,26 @@ export default function Admin() {
     if (!confirm("Delete this problem?")) return;
     await supabase.from("problems").delete().eq("id", id);
     setProblems(problems.filter((p) => p.id !== id));
+  };
+
+  const saveEdit = async () => {
+    if (!editingProblem || !editingProblem.title.trim()) return;
+    setEditSaving(true);
+    const { error } = await supabase.from("problems").update({
+      title: editingProblem.title,
+      subject: editingProblem.subject,
+      topic: editingProblem.topic,
+      difficulty: editingProblem.difficulty,
+      track: editingProblem.track,
+      statement: editingProblem.statement,
+    }).eq("id", editingProblem.id);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Problem updated!");
+      setProblems(prev => prev.map(p => p.id === editingProblem.id ? { ...p, ...editingProblem } : p));
+      setEditingProblem(null);
+    }
+    setEditSaving(false);
   };
 
   const addPost = async () => {
@@ -208,7 +230,32 @@ export default function Admin() {
             <Textarea placeholder="Problem statement" value={newProblem.statement} onChange={(e) => setNewProblem({ ...newProblem, statement: e.target.value })} rows={3} />
             <Button onClick={addProblem} disabled={adding || !newProblem.title.trim()} className="gap-2">{adding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add Problem</Button>
           </CardContent></Card>
-          <Card><CardHeader><CardTitle>All Problems ({problems.length})</CardTitle></CardHeader><CardContent><div className="space-y-2">{problems.length === 0 && <p className="text-sm text-muted-foreground">No problems yet.</p>}{problems.map((p) => (<div key={p.id} className="flex items-center justify-between rounded-lg border p-3"><div><p className="font-medium">{p.title}</p><p className="text-xs text-muted-foreground">{p.subject} · {p.topic} · {p.difficulty} · {p.track}</p></div><div className="flex gap-2"><Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => { setTab("testcases"); loadTestCases(p.id); }}><Terminal className="h-3 w-3" /> Test Cases</Button><Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteProblem(p.id)}><Trash2 className="h-4 w-4" /></Button></div></div>))}</div></CardContent></Card>
+          <Card><CardHeader><CardTitle>All Problems ({problems.length})</CardTitle></CardHeader><CardContent><div className="space-y-2">{problems.length === 0 && <p className="text-sm text-muted-foreground">No problems yet.</p>}{problems.map((p) => (<div key={p.id} className="flex items-center justify-between rounded-lg border p-3"><div><p className="font-medium">{p.title}</p><p className="text-xs text-muted-foreground">{p.subject} · {p.topic} · {p.difficulty} · {p.track}</p></div><div className="flex gap-2"><Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => { setTab("testcases"); loadTestCases(p.id); }}><Terminal className="h-3 w-3" /> Test Cases</Button><Button variant="outline" size="sm" className="gap-1 text-xs text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => setEditingProblem({ ...p })}><FileText className="h-3 w-3" /> Edit</Button><Button variant="ghost" size="sm" className="text-destructive" onClick={() => deleteProblem(p.id)}><Trash2 className="h-4 w-4" /></Button></div></div>))}</div></CardContent></Card>
+        </div>
+      )}
+
+      {editingProblem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-2xl rounded-xl bg-card border shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold">Edit Problem</h2>
+              <button onClick={() => setEditingProblem(null)} className="flex h-8 w-8 items-center justify-center rounded-full bg-muted hover:bg-muted/70"><XCircle className="h-4 w-4" /></button>
+            </div>
+            <Input placeholder="Problem title *" value={editingProblem.title} onChange={e => setEditingProblem({ ...editingProblem, title: e.target.value })} />
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <select className="rounded-md border bg-background px-3 py-2 text-sm" value={editingProblem.subject} onChange={e => setEditingProblem({ ...editingProblem, subject: e.target.value })}><option>Mathematics</option><option>Informatics</option></select>
+              <Input placeholder="Topic" value={editingProblem.topic ?? ""} onChange={e => setEditingProblem({ ...editingProblem, topic: e.target.value })} />
+              <select className="rounded-md border bg-background px-3 py-2 text-sm" value={editingProblem.difficulty} onChange={e => setEditingProblem({ ...editingProblem, difficulty: e.target.value })}><option>Easy</option><option>Medium</option><option>Hard</option></select>
+              <select className="rounded-md border bg-background px-3 py-2 text-sm" value={editingProblem.track} onChange={e => setEditingProblem({ ...editingProblem, track: e.target.value })}><option>IMO</option><option>IOI</option></select>
+            </div>
+            <Textarea placeholder="Problem statement" value={editingProblem.statement ?? ""} onChange={e => setEditingProblem({ ...editingProblem, statement: e.target.value })} rows={6} />
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" onClick={() => setEditingProblem(null)}>Cancel</Button>
+              <Button onClick={saveEdit} disabled={editSaving || !editingProblem.title.trim()} className="gap-2">
+                {editSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save Changes
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 

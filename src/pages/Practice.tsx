@@ -94,14 +94,15 @@ export default function Practice() {
     if (!answer.trim()) { toast.error("Please enter your answer first."); return; }
     if (!selected || getSubmission(selected.id)) return;
     setSubmitting(true);
-    const userAnswer = answer.trim().toLowerCase().replace(/\s+/g, "");
-    const correctAnswer = (selected.correct_answer || "").trim().toLowerCase().replace(/\s+/g, "");
-    const isCorrect = userAnswer === correctAnswer;
+    const normalize = (s: string) => s.trim().toLowerCase().replace(/\s+/g, "");
+    const sortCommas = (s: string) => s.split(",").map(p => p.trim().toLowerCase()).sort().join(",");
+    const userSorted = sortCommas(answer);
+    const acceptedForms = (selected.correct_answer || "").split(/\s+or\s+/i).map(f => f.trim());
+    const isCorrect = acceptedForms.some(form => normalize(answer) === normalize(form) || userSorted === sortCommas(form));
     const status = isCorrect ? "correct" : "wrong";
     const points = isCorrect ? 10 : 0;
     const { data, error } = await supabase.from("submissions").insert([{
-      user_id: user.id, problem_id: selected.id, answer: answer.trim(),
-      status, points, submitted_at: new Date().toISOString(),
+      user_id: user.id, problem_id: selected.id, answer: answer.trim(), status, points, submitted_at: new Date().toISOString(),
     }]).select().single();
     if (error) { toast.error(error.message); }
     else {
@@ -209,20 +210,18 @@ export default function Practice() {
       <Dialog open={!!selected} onOpenChange={(o) => { if (!o) closeDialog(); }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl">{selected?.title}</DialogTitle>
+            <DialogTitle>{selected?.title}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-wrap gap-2 mb-2">
             <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${difficultyColors[selected?.difficulty || ""] || "bg-gray-100 text-gray-700"}`}>{selected?.difficulty}</span>
             <Badge variant="outline" className="text-xs">{selected?.track || "IMO"}</Badge>
             {selected?.topic && <Badge variant="secondary" className="text-xs">{selected.topic}</Badge>}
           </div>
-
           {selected?.statement && (
             <div className="rounded-lg bg-muted p-4 text-sm leading-relaxed">
               <MathText text={selected.statement} />
             </div>
           )}
-
           {result ? (
             <div className="space-y-4 mt-2">
               {result.correct ? (
@@ -259,10 +258,8 @@ export default function Practice() {
                 <>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium">Your Answer</label>
-                    <Input placeholder="Enter your answer (e.g. 3.75)" value={answer}
-                      onChange={(e) => setAnswer(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter" && answer.trim()) submitAnswer(); }}
-                      autoFocus />
+                    <Input placeholder="Enter your answer (e.g. 3.75)" value={answer} onChange={(e) => setAnswer(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter" && answer.trim()) submitAnswer(); }} autoFocus />
                     <p className="mt-1 text-xs text-muted-foreground">Press Enter or click Submit. You have one attempt only.</p>
                   </div>
                   <Button onClick={submitAnswer} disabled={submitting || !answer.trim()} className="w-full gap-2">

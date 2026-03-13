@@ -1,14 +1,14 @@
 import { InlineMath, BlockMath } from "react-katex";
 import "katex/dist/katex.min.css";
 
-function stripAsymptote(text: string): string {
-  return text.replace(/\[asy\][\s\S]*?\[\/asy\]/gi, "");
-}
-
 export function MathText({ text }: { text: string }) {
   if (!text) return null;
-  const cleaned = stripAsymptote(text);
-  const parts = splitMath(cleaned.trim());
+
+  // Strip [asy]...[/asy] blocks entirely
+  const cleaned = text.replace(/\[asy\][\s\S]*?\[\/asy\]/gi, "").trim();
+
+  const parts = splitMath(cleaned);
+
   return (
     <span className="math-text leading-relaxed">
       {parts.map((part, i) => {
@@ -42,6 +42,7 @@ function splitMath(input: string): Part[] {
   const regex = /(\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\})|(\$\$([\s\S]*?)\$\$)|(\\\[([\s\S]*?)\\\])|(\$([^$\n]+?)\$)|(\\\(([^\)]*?)\\\))/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
+
   while ((match = regex.exec(input)) !== null) {
     if (match.index > lastIndex) parts.push({ type: "text", content: input.slice(lastIndex, match.index) });
     if (match[1] !== undefined) parts.push({ type: "block", content: match[1] });
@@ -51,6 +52,7 @@ function splitMath(input: string): Part[] {
     else if (match[8] !== undefined) parts.push({ type: "inline", content: match[9] ?? "" });
     lastIndex = regex.lastIndex;
   }
+
   if (lastIndex < input.length) parts.push({ type: "text", content: input.slice(lastIndex) });
   return parts;
 }

@@ -1,4 +1,3 @@
-<select className="rounded-md border bg-background px-3 py-2 text-sm w-full" value={newScholarship.category} onChange={(e) => setNewScholarship({ ...newScholarship, category: e.target.value })}><option value="">Select Category</option><option>Nonprofits</option><option>Competitions</option><option>Awards</option><option>Summer Programs</option><option>Internships</option><option>Clubs</option><option>Programs</option><option>Scholarships</option></select>import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
@@ -312,6 +311,7 @@ export default function Admin() {
             
             <Input placeholder="Tags — comma separated (e.g. National, STEM Only, Fully Funded)" value={newScholarship.tags} onChange={(e) => setNewScholarship({ ...newScholarship, tags: e.target.value })} />
             <Textarea placeholder="Short description (shown on card)" value={newScholarship.description} onChange={(e) => setNewScholarship({ ...newScholarship, description: e.target.value })} rows={2} />
+            <select className="rounded-md border bg-background px-3 py-2 text-sm w-full" value={newScholarship.category} onChange={(e) => setNewScholarship({ ...newScholarship, category: e.target.value })}><option value="">Select Category</option><option>Nonprofits</option><option>Competitions</option><option>Awards</option><option>Summer Programs</option><option>Internships</option><option>Clubs</option><option>Programs</option><option>Scholarships</option></select>
             <Input placeholder="Application link (e.g. https://...)" value={newScholarship.link} onChange={(e) => setNewScholarship({ ...newScholarship, link: e.target.value })} />
             <Button onClick={addScholarship} disabled={addingScholarship || !newScholarship.name.trim()} className="gap-2">{addingScholarship ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add Scholarship</Button>
           </CardContent></Card>

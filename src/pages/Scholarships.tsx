@@ -16,7 +16,7 @@ type Scholarship = {
   link: string;
 };
 
-const allTags = ["All", "National", "International", "STEM Only", "Fully Funded"];
+const allTags = ["All", "Nonprofits", "Competitions", "Awards", "Summer Programs", "Internships", "Clubs", "Programs", "Scholarships"];
 
 const tagColors: Record<string, string> = {
   "National":      "bg-blue-100 text-blue-700",
@@ -46,7 +46,7 @@ export default function Scholarships() {
   }, []);
 
   const filtered = scholarships.filter((s) => {
-    const matchesTag = filter === "All" ? true : s.tags?.includes(filter);
+    const matchesTag = filter === "All" ? true : s.category === filter;
     const matchesSearch = search === "" ? true :
       s.name.toLowerCase().includes(search.toLowerCase()) ||
       s.country.toLowerCase().includes(search.toLowerCase()) ||

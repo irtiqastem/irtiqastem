@@ -60,7 +60,7 @@ export default function Scholarships() {
         <div className="container-narrow px-4">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <h1 className="mb-3 text-3xl font-bold text-primary-foreground md:text-5xl">
-              Scholarships & Opportunities
+              Extracurricular Activities
             </h1>
             <p className="max-w-2xl text-primary-foreground/80 text-lg">
               Financial support and programs to help Pakistani students pursue STEM excellence globally.

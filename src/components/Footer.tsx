@@ -32,7 +32,7 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-navy-foreground/70">
               <li><Link to="/stem-hub" className="hover:text-accent transition-colors">STEM Guidance Hub</Link></li>
               <li><Link to="/resources" className="hover:text-accent transition-colors">Learning Materials</Link></li>
-              <li><Link to="/scholarships" className="hover:text-accent transition-colors">Scholarships</Link></li>
+              <li><Link to="/scholarships" className="hover:text-accent transition-colors">Extracurricular Activities</Link></li>
             </ul>
           </div>
 

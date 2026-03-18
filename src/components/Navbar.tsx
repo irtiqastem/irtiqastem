@@ -11,7 +11,7 @@ const navLinks = [
   { label: "STEM Hub", path: "/stem-hub" },
   { label: "Practice", path: "/practice" },
   { label: "Resources", path: "/resources" },
-  { label: "Scholarships", path: "/scholarships" },
+  { label: "Extracurricular Activities", path: "/scholarships" },
   { label: "Blog", path: "/blog" },
 ];
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+<select className="rounded-md border bg-background px-3 py-2 text-sm w-full" value={newScholarship.category} onChange={(e) => setNewScholarship({ ...newScholarship, category: e.target.value })}><option value="">Select Category</option><option>Nonprofits</option><option>Competitions</option><option>Awards</option><option>Summer Programs</option><option>Internships</option><option>Clubs</option><option>Programs</option><option>Scholarships</option></select>import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,7 +23,7 @@ export default function Admin() {
   const [visits, setVisits] = useState<any[]>([]);
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [scholarships, setScholarships] = useState<any[]>([]);
-  const [newScholarship, setNewScholarship] = useState({ name: "", country: "", eligibility: "", deadline: "", coverage: "", tags: "", description: "", link: "" });
+  const [newScholarship, setNewScholarship] = useState({ name: "", country: "", eligibility: "", deadline: "", coverage: "", tags: "", description: "", category: "", link: "" });
   const [addingScholarship, setAddingScholarship] = useState(false);
   const [editScholarship, setEditScholarship] = useState<any | null>(null);
   const [updatingScholarship, setUpdatingScholarship] = useState(false);
@@ -111,7 +111,7 @@ export default function Admin() {
       toast.success("Scholarship added!");
       const { data } = await supabase.from("scholarships").select("*").order("created_at", { ascending: false });
       setScholarships(data ?? []);
-      setNewScholarship({ name: "", country: "", eligibility: "", deadline: "", coverage: "", tags: "", description: "", link: "" });
+      setNewScholarship({ name: "", country: "", eligibility: "", deadline: "", coverage: "", tags: "", description: "", category: "", link: "" });
     }
     setAddingScholarship(false);
   };
@@ -309,6 +309,7 @@ export default function Admin() {
               <Input placeholder="Deadline (e.g. March 2026)" value={newScholarship.deadline} onChange={(e) => setNewScholarship({ ...newScholarship, deadline: e.target.value })} />
               <Input placeholder="Coverage (e.g. Fully Funded)" value={newScholarship.coverage} onChange={(e) => setNewScholarship({ ...newScholarship, coverage: e.target.value })} />
             </div>
+            
             <Input placeholder="Tags — comma separated (e.g. National, STEM Only, Fully Funded)" value={newScholarship.tags} onChange={(e) => setNewScholarship({ ...newScholarship, tags: e.target.value })} />
             <Textarea placeholder="Short description (shown on card)" value={newScholarship.description} onChange={(e) => setNewScholarship({ ...newScholarship, description: e.target.value })} rows={2} />
             <Input placeholder="Application link (e.g. https://...)" value={newScholarship.link} onChange={(e) => setNewScholarship({ ...newScholarship, link: e.target.value })} />

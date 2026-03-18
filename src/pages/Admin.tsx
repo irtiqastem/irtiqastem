@@ -23,7 +23,7 @@ export default function Admin() {
   const [visits, setVisits] = useState<any[]>([]);
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [scholarships, setScholarships] = useState<any[]>([]);
-  const [newScholarship, setNewScholarship] = useState({ name: "", country: "", eligibility: "", deadline: "", coverage: "", tags: "", link: "" });
+  const [newScholarship, setNewScholarship] = useState({ name: "", country: "", eligibility: "", deadline: "", coverage: "", tags: "", description: "", link: "" });
   const [addingScholarship, setAddingScholarship] = useState(false);
   const [editScholarship, setEditScholarship] = useState<any | null>(null);
   const [updatingScholarship, setUpdatingScholarship] = useState(false);
@@ -111,7 +111,7 @@ export default function Admin() {
       toast.success("Scholarship added!");
       const { data } = await supabase.from("scholarships").select("*").order("created_at", { ascending: false });
       setScholarships(data ?? []);
-      setNewScholarship({ name: "", country: "", eligibility: "", deadline: "", coverage: "", tags: "", link: "" });
+      setNewScholarship({ name: "", country: "", eligibility: "", deadline: "", coverage: "", tags: "", description: "", link: "" });
     }
     setAddingScholarship(false);
   };

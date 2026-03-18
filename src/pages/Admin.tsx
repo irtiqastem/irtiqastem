@@ -313,6 +313,7 @@ export default function Admin() {
             <Input placeholder="Tags — comma separated (e.g. National, STEM Only, Fully Funded)" value={newScholarship.tags} onChange={(e) => setNewScholarship({ ...newScholarship, tags: e.target.value })} />
             <Textarea placeholder="Short description (shown on card)" value={newScholarship.description} onChange={(e) => setNewScholarship({ ...newScholarship, description: e.target.value })} rows={2} />
             <select className="rounded-md border bg-background px-3 py-2 text-sm w-full" value={newScholarship.category} onChange={(e) => setNewScholarship({ ...newScholarship, category: e.target.value })}><option value="">Select Category</option><option>Nonprofits</option><option>Competitions</option><option>Awards</option><option>Summer Programs</option><option>Internships</option><option>Clubs</option><option>Programs</option><option>Scholarships</option></select>
+            <Input placeholder="Tags — comma separated (e.g. STEM, Medical, Humanities)" value={newScholarship.tags} onChange={(e) => setNewScholarship({ ...newScholarship, tags: e.target.value })} />
             <Input placeholder="Application link (e.g. https://...)" value={newScholarship.link} onChange={(e) => setNewScholarship({ ...newScholarship, link: e.target.value })} />
             <Button onClick={addScholarship} disabled={addingScholarship || !newScholarship.name.trim()} className="gap-2">{addingScholarship ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add Scholarship</Button>
           </CardContent></Card>
@@ -349,7 +350,8 @@ export default function Admin() {
                 <Input placeholder="Coverage" value={editScholarship.coverage || ""} onChange={(e) => setEditScholarship({ ...editScholarship, coverage: e.target.value })} />
               </div>
               <Input placeholder="Tags (comma separated)" value={typeof editScholarship.tags === "string" ? editScholarship.tags : (editScholarship.tags ?? []).join(", ")} onChange={(e) => setEditScholarship({ ...editScholarship, tags: e.target.value })} />
-              <Input placeholder="Application link" value={editScholarship.link || ""} onChange={(e) => setEditScholarship({ ...editScholarship, link: e.target.value })} />
+              <Input placeholder="Tags — comma separated (e.g. STEM, Medical, Humanities)" value={newScholarship.tags} onChange={(e) => setNewScholarship({ ...newScholarship, tags: e.target.value })} />
+            <Input placeholder="Application link" value={editScholarship.link || ""} onChange={(e) => setEditScholarship({ ...editScholarship, link: e.target.value })} />
               <div className="flex gap-2 pt-1">
                 <Button onClick={updateScholarship} disabled={updatingScholarship || !editScholarship.name.trim()} className="flex-1 gap-2">{updatingScholarship ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Save Changes</Button>
                 <Button variant="outline" onClick={() => setEditScholarship(null)} className="gap-2"><X className="h-4 w-4" /> Cancel</Button>

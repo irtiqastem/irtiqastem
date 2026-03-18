@@ -310,6 +310,7 @@ export default function Admin() {
               <Input placeholder="Coverage (e.g. Fully Funded)" value={newScholarship.coverage} onChange={(e) => setNewScholarship({ ...newScholarship, coverage: e.target.value })} />
             </div>
             <Input placeholder="Tags — comma separated (e.g. National, STEM Only, Fully Funded)" value={newScholarship.tags} onChange={(e) => setNewScholarship({ ...newScholarship, tags: e.target.value })} />
+            <Textarea placeholder="Short description (shown on card)" value={newScholarship.description} onChange={(e) => setNewScholarship({ ...newScholarship, description: e.target.value })} rows={2} />
             <Input placeholder="Application link (e.g. https://...)" value={newScholarship.link} onChange={(e) => setNewScholarship({ ...newScholarship, link: e.target.value })} />
             <Button onClick={addScholarship} disabled={addingScholarship || !newScholarship.name.trim()} className="gap-2">{addingScholarship ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Add Scholarship</Button>
           </CardContent></Card>
